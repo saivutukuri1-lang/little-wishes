@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - Little Wishes</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Upcoming Events</h1>
+            <p>Join us for fundraisers, care bag packing, and workshops</p>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title fade-in">Upcoming Events</h2>
+            <p class="section-subtitle fade-in">
+                Here are our next three upcoming events. Events are automatically updated from our calendar.
+            </p>
+            
+            <!-- Calendar Events Container -->
+            <div id="calendar-events"></div>
+
+            <!-- Google Calendar Embed -->
+            <div class="calendar-embed" style="margin-top: 3rem;">
+                <h2 class="section-title fade-in" style="margin-bottom: 1rem;">Full Calendar</h2>
+                <p class="section-subtitle fade-in" style="margin-bottom: 2rem;">
+                    View all our events and activities on the calendar below.
+                </p>
+                <div style="position: relative; padding-bottom: 75%; height: 0; overflow: hidden; border-radius: var(--border-radius); box-shadow: var(--shadow); background: white;">
+                    <iframe 
+                        src="https://calendar.google.com/calendar/embed?src=d2lzaGVzbGl0dGxlNDE2QGdtYWlsLmNvbQ&ctz=America%2FNew_York" 
+                        style="border: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+                        frameborder="0" 
+                        scrolling="no"
+                        title="Little Wishes Calendar">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="footer-container"></div>
+    <script src="js/main.js"></script>
+    <script src="js/calendar.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Little Wishes</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Contact Us</h1>
+            <p>We'd love to hear from you! Get in touch with any questions or inquiries.</p>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="section">
+        <div class="container">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h2 class="section-title fade-in">Get In Touch</h2>
+                <p class="section-subtitle fade-in">
+                    Fill out the form below and we'll get back to you as soon as possible.
+                </p>
+
+                <!-- Contact Form -->
+                <div class="card fade-in" style="margin-top: 2rem;">
+                    <form id="contactForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <!-- Name -->
+                        <div>
+                            <label for="name" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">Full Name *</label>
+                            <input type="text" id="name" name="name" required 
+                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; transition: border-color 0.3s;"
+                                   onfocus="this.style.borderColor='var(--accent-color)'" 
+                                   onblur="this.style.borderColor='#e0e0e0'">
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label for="email" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">Email Address *</label>
+                            <input type="email" id="email" name="email" required 
+                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; transition: border-color 0.3s;"
+                                   onfocus="this.style.borderColor='var(--accent-color)'" 
+                                   onblur="this.style.borderColor='#e0e0e0'">
+                        </div>
+
+                        <!-- Phone -->
+                        <div>
+                            <label for="phone" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" 
+                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; transition: border-color 0.3s;"
+                                   onfocus="this.style.borderColor='var(--accent-color)'" 
+                                   onblur="this.style.borderColor='#e0e0e0'">
+                        </div>
+
+                        <!-- Inquiry Type -->
+                        <div>
+                            <label for="inquiryType" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">What can we help you with? *</label>
+                            <select id="inquiryType" name="inquiryType" required 
+                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; background-color: white; transition: border-color 0.3s;"
+                                    onfocus="this.style.borderColor='var(--accent-color)'" 
+                                    onblur="this.style.borderColor='#e0e0e0'">
+                                <option value="">Select an option</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="classes">Class Information</option>
+                                <option value="volunteer">Volunteer Opportunities</option>
+                                <option value="donate">Donation Information</option>
+                                <option value="partnership">Partnership Opportunities</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Subject -->
+                        <div>
+                            <label for="subject" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">Subject *</label>
+                            <input type="text" id="subject" name="subject" required 
+                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; transition: border-color 0.3s;"
+                                   onfocus="this.style.borderColor='var(--accent-color)'" 
+                                   onblur="this.style.borderColor='#e0e0e0'">
+                        </div>
+
+                        <!-- Message -->
+                        <div>
+                            <label for="message" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">Message *</label>
+                            <textarea id="message" name="message" rows="6" required 
+                                      style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; resize: vertical; transition: border-color 0.3s;"
+                                      onfocus="this.style.borderColor='var(--accent-color)'" 
+                                      onblur="this.style.borderColor='#e0e0e0'"></textarea>
+                        </div>
+
+                        <!-- How did you hear about us? -->
+                        <div>
+                            <label for="hearAbout" style="display: block; margin-bottom: 0.5rem; color: var(--primary-color); font-weight: 600;">How did you hear about Little Wishes?</label>
+                            <select id="hearAbout" name="hearAbout" 
+                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: var(--border-radius); font-size: 1rem; font-family: inherit; background-color: white; transition: border-color 0.3s;"
+                                    onfocus="this.style.borderColor='var(--accent-color)'" 
+                                    onblur="this.style.borderColor='#e0e0e0'">
+                                <option value="">Select an option</option>
+                                <option value="website">Website</option>
+                                <option value="social-media">Social Media</option>
+                                <option value="friend-family">Friend or Family</option>
+                                <option value="school">School/Organization</option>
+                                <option value="event">Event</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div style="margin-top: 1rem;">
+                            <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 1rem 2rem;">
+                                Send Message →
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="card fade-in" style="margin-top: 2rem; text-align: center;">
+                    <h3 class="card-title">Other Ways to Reach Us</h3>
+                    <p class="card-text" style="margin-top: 1rem;">
+                        <strong>Email:</strong> <a href="mailto:wisheslittle416@gmail.com" style="color: var(--primary-color);">wisheslittle416@gmail.com</a>
+                    </p>
+                    <div class="social-icons" style="margin-top: 1.5rem; justify-content: center;">
+                        <a href="#" class="social-icon" aria-label="Facebook">📘</a>
+                        <a href="#" class="social-icon" aria-label="Instagram">📷</a>
+                        <a href="#" class="social-icon" aria-label="Twitter">🐦</a>
+                        <a href="mailto:wisheslittle416@gmail.com" class="social-icon" aria-label="Email">✉️</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="footer-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/contact.js"></script>
+    <script>
+        // Initialize EmailJS with your public key
+        // Get your public key from: https://dashboard.emailjs.com/admin/integration
+        (function(){
+            if (typeof emailjs !== 'undefined') {
+                // This will be set in contact.js after you configure it
+            }
+        })();
+    </script>
+</body>
+</html>
+
