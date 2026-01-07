@@ -3,30 +3,58 @@
 // Fetches and displays the next 3 upcoming events
 // ============================================
 
-const CALENDAR_ID = 'd2lzaGVzbGl0dGxlNDE2QGdtYWlsLmNvbQ';
+const CALENDAR_EMAIL = 'wisheslittle416@gmail.com';
+const CALENDAR_ID = encodeURIComponent(CALENDAR_EMAIL); // URL encode the email
+// Use the correct iCal URL format
 const CALENDAR_ICAL_URL = `https://calendar.google.com/calendar/ical/${CALENDAR_ID}/public/basic.ics`;
+const CALENDAR_ICAL_URLS = [
+    CALENDAR_ICAL_URL,
+    // Try alternative formats as fallback
+    `https://calendar.google.com/calendar/ical/${CALENDAR_EMAIL}/public/basic.ics`,
+    `https://www.google.com/calendar/ical/${CALENDAR_ID}/public/basic.ics`
+];
+const CALENDAR_ICAL_URL_ALT = CALENDAR_ICAL_URLS[1];
 
 // Parse iCal date string to JavaScript Date
 function parseICalDate(dateString) {
-    // iCal dates are in format: YYYYMMDDTHHMMSSZ or YYYYMMDD
+    if (!dateString) return null;
+    
+    // Remove any whitespace
+    dateString = dateString.trim();
+    
+    // iCal dates are in format: YYYYMMDDTHHMMSSZ or YYYYMMDD or YYYYMMDDTHHMMSS
     if (dateString.length === 8) {
-        // Date only (all-day event)
-        const year = dateString.substring(0, 4);
-        const month = dateString.substring(4, 6);
-        const day = dateString.substring(6, 8);
-        return new Date(year, parseInt(month) - 1, day);
+        // Date only (all-day event) - format: YYYYMMDD
+        const year = parseInt(dateString.substring(0, 4));
+        const month = parseInt(dateString.substring(4, 6)) - 1; // Month is 0-indexed
+        const day = parseInt(dateString.substring(6, 8));
+        return new Date(year, month, day);
     } else if (dateString.includes('T')) {
-        // Date and time
+        // Date and time - format: YYYYMMDDTHHMMSSZ or YYYYMMDDTHHMMSS
         const datePart = dateString.split('T')[0];
-        const timePart = dateString.split('T')[1].replace('Z', '');
-        const year = datePart.substring(0, 4);
-        const month = datePart.substring(4, 6);
-        const day = datePart.substring(6, 8);
-        const hour = timePart.substring(0, 2);
-        const minute = timePart.substring(2, 4);
-        const second = timePart.substring(4, 6) || '00';
-        return new Date(Date.UTC(year, parseInt(month) - 1, day, hour, minute, second));
+        let timePart = dateString.split('T')[1];
+        
+        // Remove Z (UTC indicator) if present
+        const isUTC = timePart.endsWith('Z');
+        if (isUTC) {
+            timePart = timePart.replace('Z', '');
+        }
+        
+        const year = parseInt(datePart.substring(0, 4));
+        const month = parseInt(datePart.substring(4, 6)) - 1;
+        const day = parseInt(datePart.substring(6, 8));
+        const hour = parseInt(timePart.substring(0, 2)) || 0;
+        const minute = parseInt(timePart.substring(2, 4)) || 0;
+        const second = parseInt(timePart.substring(4, 6)) || 0;
+        
+        if (isUTC) {
+            return new Date(Date.UTC(year, month, day, hour, minute, second));
+        } else {
+            return new Date(year, month, day, hour, minute, second);
+        }
     }
+    
+    console.warn('Unable to parse date string:', dateString);
     return null;
 }
 
@@ -91,16 +119,24 @@ function parseICal(icalContent) {
             currentEvent = null;
         } else if (inEvent && currentEvent) {
             if (line.startsWith('DTSTART')) {
-                const parts = line.split(':');
-                if (parts.length > 1) {
-                    const dateStr = parts.slice(1).join(':');
-                    currentEvent.start = parseICalDate(dateStr);
+                // Handle DTSTART with or without parameters (e.g., DTSTART;VALUE=DATE:20250115)
+                const colonIndex = line.indexOf(':');
+                if (colonIndex > 0) {
+                    const dateStr = line.substring(colonIndex + 1).trim();
+                    const parsedDate = parseICalDate(dateStr);
+                    if (parsedDate) {
+                        currentEvent.start = parsedDate;
+                    }
                 }
             } else if (line.startsWith('DTEND')) {
-                const parts = line.split(':');
-                if (parts.length > 1) {
-                    const dateStr = parts.slice(1).join(':');
-                    currentEvent.end = parseICalDate(dateStr);
+                // Handle DTEND with or without parameters
+                const colonIndex = line.indexOf(':');
+                if (colonIndex > 0) {
+                    const dateStr = line.substring(colonIndex + 1).trim();
+                    const parsedDate = parseICalDate(dateStr);
+                    if (parsedDate) {
+                        currentEvent.end = parsedDate;
+                    }
                 }
             } else if (line.startsWith('SUMMARY:')) {
                 currentEvent.summary = line.substring(8).trim();
@@ -118,48 +154,125 @@ function parseICal(icalContent) {
 // Fetch and display calendar events
 async function loadCalendarEvents() {
     const eventsContainer = document.getElementById('calendar-events');
-    if (!eventsContainer) return;
+    if (!eventsContainer) {
+        console.error('Calendar events container not found');
+        return;
+    }
     
     try {
         // Show loading state
         eventsContainer.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>Loading events...</p></div>';
         
-        // Fetch iCal feed with CORS proxy if needed
-        let response;
+        let icalContent;
+        let success = false;
+        let lastError = null;
+        
+        // Try direct fetch first (fastest if it works)
         try {
-            response = await fetch(CALENDAR_ICAL_URL, {
+            const response = await fetch(CALENDAR_ICAL_URL, {
                 mode: 'cors',
-                cache: 'no-cache'
+                cache: 'no-cache',
+                headers: {
+                    'Accept': 'text/calendar'
+                }
             });
-        } catch (corsError) {
-            // If CORS fails, try using a proxy
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(CALENDAR_ICAL_URL)}`;
-            response = await fetch(proxyUrl);
-            if (!response.ok) {
-                throw new Error('Failed to fetch calendar');
+            if (response.ok) {
+                icalContent = await response.text();
+                if (icalContent && icalContent.includes('BEGIN:VCALENDAR')) {
+                    success = true;
+                }
             }
-            const proxyData = await response.json();
-            const icalContent = proxyData.contents;
-            const events = parseICal(icalContent);
-            processEvents(events, eventsContainer);
-            return;
+        } catch (directError) {
+            lastError = directError;
         }
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch calendar');
+        // If direct fetch failed, try the fastest proxy
+        if (!success) {
+            try {
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(CALENDAR_ICAL_URL)}`;
+                const response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/calendar, text/plain, */*'
+                    }
+                });
+                
+                if (response.ok) {
+                    icalContent = await response.text();
+                    if (icalContent && icalContent.includes('BEGIN:VCALENDAR')) {
+                        success = true;
+                    }
+                }
+            } catch (proxyError) {
+                lastError = proxyError;
+                
+                // Try one backup proxy
+                try {
+                    const backupUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(CALENDAR_ICAL_URL)}`;
+                    const response = await fetch(backupUrl);
+                    if (response.ok) {
+                        const proxyData = await response.json();
+                        icalContent = proxyData.contents;
+                        if (icalContent && icalContent.includes('BEGIN:VCALENDAR')) {
+                            success = true;
+                        }
+                    }
+                } catch (backupError) {
+                    lastError = backupError;
+                }
+            }
         }
         
-        const icalContent = await response.text();
+        if (!success || !icalContent) {
+            throw new Error('Failed to fetch calendar. The calendar may not be set to public. See instructions below.');
+        }
+        
+        if (!icalContent || !icalContent.includes('BEGIN:VCALENDAR')) {
+            throw new Error('No valid calendar content received. Calendar may not be public or URL is incorrect.');
+        }
+        
         const events = parseICal(icalContent);
+        
+        // Cache the parsed events
+        calendarCache.data = events;
+        calendarCache.timestamp = Date.now();
+        
         processEvents(events, eventsContainer);
         
     } catch (error) {
         console.error('Error loading calendar events:', error);
         eventsContainer.innerHTML = `
             <div class="event-card fade-in">
-                <div class="event-date">Unable to Load Events</div>
-                <h3 class="event-title">Calendar Unavailable</h3>
-                <p>We're having trouble loading events. Please check back later or <a href="https://calendar.google.com/calendar/u/0?cid=${CALENDAR_ID}" target="_blank" style="color: var(--primary-color);">view our calendar directly</a>.</p>
+                <div class="event-date">Calendar Setup Required</div>
+                <h3 class="event-title">Enable Public iCal Feed</h3>
+                <p>To display events automatically, your Google Calendar needs to be set to public with iCal feed enabled.</p>
+                
+                <div style="text-align: left; max-width: 700px; margin: 1.5rem auto; background: #f8f9fa; padding: 1.5rem; border-radius: var(--border-radius);">
+                    <h4 style="color: var(--primary-color); margin-bottom: 1rem;">How to Enable Public iCal Feed:</h4>
+                    <ol style="color: var(--text-light); line-height: 1.8; padding-left: 1.5rem;">
+                        <li>Go to <a href="https://calendar.google.com/calendar/settings" target="_blank" style="color: var(--primary-color);">Google Calendar Settings</a></li>
+                        <li>Click on <strong>"Settings for my calendars"</strong> in the left sidebar</li>
+                        <li>Select your calendar (the one with events)</li>
+                        <li>Scroll down to <strong>"Access permissions"</strong> section</li>
+                        <li>Check <strong>"Make available to public"</strong></li>
+                        <li>Select <strong>"See all event details"</strong> from the dropdown</li>
+                        <li>Scroll down to <strong>"Integrate calendar"</strong> section</li>
+                        <li>Copy the <strong>"Public URL to iCal format"</strong> link</li>
+                        <li>Test that link in your browser - it should show calendar data starting with <code>BEGIN:VCALENDAR</code></li>
+                    </ol>
+                </div>
+                
+                <p style="margin-top: 1.5rem; color: var(--text-light);">
+                    <strong>Calendar Email:</strong> <code style="font-size: 0.85rem; background: #f0f0f0; padding: 0.2rem 0.5rem; border-radius: 4px;">${CALENDAR_EMAIL}</code>
+                </p>
+                
+                <p style="margin-top: 1.5rem;">
+                    <a href="https://calendar.google.com/calendar/u/0?cid=${encodeURIComponent(CALENDAR_EMAIL)}" target="_blank" class="btn btn-primary" style="display: inline-block;">View Calendar Directly →</a>
+                </p>
+                
+                <p style="margin-top: 1rem; font-size: 0.85rem; color: #999;">
+                    Once the calendar is public, refresh this page to see events automatically.
+                </p>
             </div>
         `;
     }
@@ -167,19 +280,53 @@ async function loadCalendarEvents() {
 
 // Process and display events
 function processEvents(events, eventsContainer) {
+    if (events.length === 0) {
+        eventsContainer.innerHTML = `
+            <div class="event-card fade-in">
+                <div class="event-date">No Events Found</div>
+                <h3 class="event-title">Check Back Soon!</h3>
+                <p>We're planning exciting events. Stay tuned for updates!</p>
+            </div>
+        `;
+        return;
+    }
+    
     // Filter for upcoming events and sort by date
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+    // Set to start of today for all-day event comparison
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
+    // Filter events that haven't ended yet (compare with current time)
     const upcomingEvents = events
         .filter(event => {
-            if (!event.start) return false;
-            const eventDate = new Date(event.start);
-            eventDate.setHours(0, 0, 0, 0);
-            return eventDate >= now;
+            if (!event.start) {
+                console.log('Event missing start date:', event);
+                return false;
+            }
+            
+            const eventStart = new Date(event.start);
+            const eventEnd = event.end ? new Date(event.end) : eventStart;
+            
+            // For all-day events, compare dates only (not times)
+            const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0 && 
+                            eventStart.getSeconds() === 0 && (!event.end || 
+                            (eventEnd.getHours() === 0 && eventEnd.getMinutes() === 0));
+            
+            if (isAllDay) {
+                // For all-day events, include if end date is today or later
+                const eventEndDate = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate());
+                const isUpcoming = eventEndDate >= todayStart;
+                return isUpcoming;
+            } else {
+                // For timed events, include if end time is now or later
+                return eventEnd >= now;
+            }
         })
-        .sort((a, b) => a.start - b.start)
-        .slice(0, 3); // Get next 3 events
+        .sort((a, b) => {
+            // Sort by start time, earliest first
+            return a.start - b.start;
+        })
+        .slice(0, 3); // Limit to next 3 events only
     
     // Clear container
     eventsContainer.innerHTML = '';
@@ -195,16 +342,42 @@ function processEvents(events, eventsContainer) {
         return;
     }
     
-    // Display events
+    // Display the next 3 upcoming events (already limited by .slice(0, 3) above)
     upcomingEvents.forEach((event, index) => {
         const eventCard = document.createElement('div');
         eventCard.className = 'event-card fade-in';
         eventCard.style.transitionDelay = `${index * 0.1}s`;
         
-        const dateStr = formatDate(event.start);
-        const timeStr = event.end ? 
-            `${formatTime(event.start)} - ${formatTime(event.end)}` : 
-            formatTime(event.start);
+        const eventStart = new Date(event.start);
+        const eventEnd = event.end ? new Date(event.end) : eventStart;
+        
+        // Check if it's an all-day event
+        const isAllDay = eventStart.getHours() === 0 && eventStart.getMinutes() === 0 && 
+                        eventStart.getSeconds() === 0 && 
+                        (!event.end || (eventEnd.getHours() === 0 && eventEnd.getMinutes() === 0));
+        
+        let dateStr, timeStr;
+        
+        if (isAllDay) {
+            // Format all-day events
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            };
+            dateStr = eventStart.toLocaleDateString('en-US', options);
+            if (event.end && eventEnd.getTime() !== eventStart.getTime()) {
+                const endDateStr = eventEnd.toLocaleDateString('en-US', options);
+                dateStr += ` - ${endDateStr}`;
+            }
+            timeStr = 'All Day';
+        } else {
+            // Format timed events
+            dateStr = formatDate(event.start);
+            timeStr = event.end ? 
+                `${formatTime(event.start)} - ${formatTime(event.end)}` : 
+                formatTime(event.start);
+        }
         
         eventCard.innerHTML = `
             <div class="event-date">${dateStr}</div>
@@ -227,13 +400,31 @@ function processEvents(events, eventsContainer) {
     }, 100);
 }
 
+// Simple cache to avoid refetching too frequently
+let calendarCache = {
+    data: null,
+    timestamp: null,
+    ttl: 5 * 60 * 1000 // 5 minutes cache
+};
+
 // Auto-refresh events every hour
 function initCalendarAutoRefresh() {
+    // Check cache first
+    if (calendarCache.data && calendarCache.timestamp && 
+        (Date.now() - calendarCache.timestamp) < calendarCache.ttl) {
+        const eventsContainer = document.getElementById('calendar-events');
+        if (eventsContainer) {
+            processEvents(calendarCache.data, eventsContainer);
+            return; // Use cache, don't fetch again
+        }
+    }
+    
     // Load events immediately
     loadCalendarEvents();
     
     // Refresh every hour
     setInterval(() => {
+        calendarCache.data = null; // Clear cache before refresh
         loadCalendarEvents();
     }, 60 * 60 * 1000);
 }
